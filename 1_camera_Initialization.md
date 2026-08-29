@@ -29,20 +29,20 @@ typically:
 ### install ffmpeg, a command-line program for working with video and audio
     sudo apt update
     sudo apt install ffmpeg
-Verify
+ Verify
     ffmpeg -version
-Step 3.5: initialize camera on same wifi as raspberry pie
-#currently using tapo C101 wifi camera
+# Step 3.5: initialize camera on same wifi as raspberry pie
+### currently using tapo C101 wifi camera
 i/tapo app:
 Create camera account in advanced settings
 Change ip address to static and record
 
-Step 4: Find the camera
-On the pi:
+# Step 4: Find the camera
+### On the pi:
     ping -c 4 192.168.1.50
     ip neigh show 192.168.1.50
 
-Step 4.5: Check RTSP port 554
+# Step 4.5: Check RTSP port 554
 On the pi:
     nc -zv 192.168.1.50 554
 #if nc isn't installed: 
