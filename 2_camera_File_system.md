@@ -149,7 +149,6 @@ Step 3.4: Check its status
             CPU: 501ms
         CGroup: /system.slice/pi-security-recorder.service
                 └─2579 /usr/bin/ffmpeg -rtsp_transport tcp -i rtsp://CaptainOwl:N49VRJb2e2@192.168.1.50:554/stream1 -map 0:v:0 >
-
     Aug 24 11:52:37 owl ffmpeg[2579]: [245B blob data]
     Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504744, current: 486013; chang>
     Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504745, current: 491953; chang>
