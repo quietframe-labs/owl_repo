@@ -139,24 +139,24 @@ Step 3.3 Start tge recorder
 Step 3.4: Check its status
     sudo systemctl status pi-security-recorder
 # Output:
-admin@owl:~$ sudo systemctl status pi-security-recorder
-● pi-security-recorder.service - Pi Security Camera Recorder
-     Loaded: loaded (/etc/systemd/system/pi-security-recorder.service; enabled; preset: enabled)
-     Active: active (running) since Mon 2026-08-24 11:52:31 PDT; 7s ago
- Invocation: a703b77e34a04587818c19420f3d1f2e
-   Main PID: 2579 (ffmpeg)
-      Tasks: 3 (limit: 8796)
-        CPU: 501ms
-     CGroup: /system.slice/pi-security-recorder.service
-             └─2579 /usr/bin/ffmpeg -rtsp_transport tcp -i rtsp://CaptainOwl:N49VRJb2e2@192.168.1.50:554/stream1 -map 0:v:0 >
+'    admin@owl:~$ sudo systemctl status pi-security-recorder
+    ● pi-security-recorder.service - Pi Security Camera Recorder
+        Loaded: loaded (/etc/systemd/system/pi-security-recorder.service; enabled; preset: enabled)
+        Active: active (running) since Mon 2026-08-24 11:52:31 PDT; 7s ago
+    Invocation: a703b77e34a04587818c19420f3d1f2e
+    Main PID: 2579 (ffmpeg)
+        Tasks: 3 (limit: 8796)
+            CPU: 501ms
+        CGroup: /system.slice/pi-security-recorder.service
+                └─2579 /usr/bin/ffmpeg -rtsp_transport tcp -i rtsp://CaptainOwl:N49VRJb2e2@192.168.1.50:554/stream1 -map 0:v:0 >
 
-Aug 24 11:52:37 owl ffmpeg[2579]: [245B blob data]
-Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504744, current: 486013; chang>
-Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504745, current: 491953; chang>
-Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504746, current: 497983; chang>
-Aug 24 11:52:38 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504747, current: 503833; chang>
-Aug 24 11:52:38 owl ffmpeg[2579]: [245B blob data]
-lines 1-16
+    Aug 24 11:52:37 owl ffmpeg[2579]: [245B blob data]
+    Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504744, current: 486013; chang>
+    Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504745, current: 491953; chang>
+    Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504746, current: 497983; chang>
+    Aug 24 11:52:38 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504747, current: 503833; chang>
+    Aug 24 11:52:38 owl ffmpeg[2579]: [245B blob data]
+    lines 1-16'
 
 Step 3.5: Tests
 # Verify file is actually growing:
