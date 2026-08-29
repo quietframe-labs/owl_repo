@@ -1,4 +1,4 @@
-#Where we should be:
+### Where we should be:
     Wi-Fi Camera
         │
         │ RTSP
@@ -8,7 +8,7 @@
         └── FFmpeg successfully receives video
                 │
                 └── test.mp4
-#Next stage should look like:
+### Next stage should look like:
     Camera
       │
      RTSP
