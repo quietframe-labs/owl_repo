@@ -1,0 +1,62 @@
+Pi Security Checklist
+- : toDo
+x : Done
+
+
+
+1. Base Linux system
+	- Install Raspberry Pi OS Lite 64-bit on the SSD.
+	- Learn boot, users, SSH, services, storage, permissions, logs, and networking.
+	- Goal: understand the machine before adding camera software.
+2. Build the isolated security network
+	- Give the Pi two network roles.
+	- Configure the dedicated camera subnet.
+	- Add the Wi-Fi access point.
+	- Configure DHCP, DNS as needed, routing, and firewall rules.
+	- Goal: understand how an appliance can control its own private network.
+3. Connect one camera manually
+	- Give it a static/reserved IP.
+	- Find its RTSP stream.
+	- View that stream directly using something like FFmpeg/VLC.
+	- No NVR yet.
+	- Goal: understand what the camera actually sends over the network.
+4. Learn the video pipeline
+	- Use FFmpeg directly.
+	- Decode the stream.
+	- Record clips.
+	- Take snapshots.
+	- Inspect codecs, bitrate, resolution, frame rate, and timestamps.
+	- Goal: understand what software like Frigate is doing for you.
+5. Add a real NVR
+	- Install Docker.
+	- Run Frigate.
+	- Configure recording, retention, events, and live viewing.
+	- Goal: see how a mature NVR assembles the individual pieces you already learned.
+6. Start replacing pieces with your own software
+	- Write a Python service that discovers/monitors cameras.
+	- Store camera configuration yourself.
+	- Use FFmpeg subprocesses or libraries to manage streams.
+	- Build a small API.
+	- Build your own web interface.
+	- Add motion/event handling.
+7. Add system services
+	- Camera watchdogs
+	- Health monitoring
+	- Storage management
+	- Automatic restart
+	- Logging
+	- User authentication
+	- Updates
+	- Device configuration
+8. Turn the software into an appliance
+	- Make your services start automatically.
+	- Remove unnecessary Raspberry Pi OS packages.
+	- Configure read-only or resilient partitions where appropriate.
+	- Automate first-boot configuration.
+	- Create your own install image.
+9. Build your own Linux image
+	
+	- Buildroot
+	      or
+	- Yocto Project
+

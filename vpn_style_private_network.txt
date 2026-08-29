@@ -1,0 +1,31 @@
+    Your laptop
+        │
+        │ Internet
+        │
+        ▼
+    Tailscale
+        │
+        ▼
+    Raspberry Pi "owl"
+    192.168.86.49 locally
+        │
+        ▼
+    Pi Security System
+
+# Step 1: Install Tailscale:
+    curl -fsSL https://tailscale.com/install.sh | sh
+## Then:
+    sudo tailscale up
+### Will print authentication URL. click
+
+# Step 2: Find the Pi's Tailscale IP
+    tailscale ip -4
+#### 100.75.123.35
+
+# Step 3: Install Tailscale on PC 
+    https://tailscale.com/download
+## Test on PC Terminal:
+    tailscale status
+
+# Step 4: SSH remotely
+    ssh admin@100.75.123.35 | ssh admin@owl

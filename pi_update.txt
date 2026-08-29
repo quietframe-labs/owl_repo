@@ -1,0 +1,13 @@
+For Raspberry Pi OS / Debian, run:
+
+sudo apt update
+sudo apt full-upgrade -y
+
+Then clean up packages that are no longer needed:
+
+sudo apt autoremove -y
+sudo apt clean
+
+Reboot afterward:
+
+sudo reboot
