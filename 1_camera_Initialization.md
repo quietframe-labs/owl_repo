@@ -50,7 +50,7 @@ Change ip address to static and record
 #### Successful result:
     Connection to 192.168.1.50 554 port [tcp/rtsp] succeeded!
 
-#Step 5: Test actual camera stream
+# Step 5: Test actual camera stream
 ### On the pi:
     ffmpeg -rtsp_transport tcp \
     -i "rtsp://CaptainOwl:YOUR_PASSWORD@192.168.1.50:554/stream1" \
@@ -65,6 +65,6 @@ Change ip address to static and record
 #### -an           ignore audio
 #### ~test.mp4 should create 10-second video, no audio.
 
-Step 5.5: Verify download
-On PC: Download test.mp4
+# Step 5.5: Verify download
+### On PC: Download test.mp4
     scp admin@192.168.1.49:/home/admin/test.mp4 "$env:USERPROFILE\Downloads\test.mp4"
