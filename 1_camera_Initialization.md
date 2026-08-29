@@ -29,7 +29,7 @@ typically:
 ### install ffmpeg, a command-line program for working with video and audio
     sudo apt update
     sudo apt install ffmpeg
-#### Verify
+ Verify
     ffmpeg -version
 # Step 3.5: initialize camera on same wifi as raspberry pie
 ### currently using tapo C101 wifi camera
