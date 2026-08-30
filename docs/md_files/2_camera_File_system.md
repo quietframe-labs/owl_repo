@@ -1,0 +1,188 @@
+### Where we should be:
+    Wi-Fi Camera
+        │
+        │ RTSP
+        ▼
+    Raspberry Pi 4
+        │
+        └── FFmpeg successfully receives video
+                │
+                └── test.mp4
+### Next stage should look like:
+    Camera
+      │
+     RTSP
+      │
+      ▼
+    Pi Security Camera Service
+      │
+      ├── Live View
+      ├── Recording
+      ├── File Management
+      └── Logs
+#Then:
+                    ┌── Motion Detection
+    Camera → Pi ────┼── Event Recording
+                    ├── Web Dashboard
+                    ├── Notifications
+                    └── Multiple Cameras
+
+-------------------------------------------------------------------------------------------: Create proper recording directory
+On the pi:
+    sudo mkdir -p /srv/pi-security/recordings
+    sudo mkdir -p /srv/pi-security/logs
+    sudo chown -R admin:admin /srv/pi-security
+Check:
+    ls -la /srv/pi-security
+
+Step 2: Test segmented recording
+#Video only, no audio. Let run for about 2 minutes 
+    ffmpeg \
+    -rtsp_transport tcp \
+    -i "rtsp://CaptainOwl:N49VRJb2e2@192.168.1.50:554/stream1" \
+    -map 0:v:0 \
+    -c:v copy \
+    -an \
+    -f segment \
+    -segment_time 60 \
+    -reset_timestamps 1 \
+    -strftime 1 \
+    "/srv/pi-security/recordings/%Y-%m-%d_%H-%M-%S.mp4"
+# -map 0:v:0
+# -an
+# Tells FFmpeg: use first video stream; ignore audio entirely 
+-------------------------------------------------------------------------------------------
+Check:
+    ls -lh /srv/pi-security/recordings
+Output:
+    admin@owl:~$ ls -lh /srv/pi-security/recordings
+    total 7.0M
+    -rw-rw-r-- 1 admin admin    0 Aug 24 11:18 2026-08-24_11-18-08.mp4 #<-Dud
+    -rw-rw-r-- 1 admin admin 7.0M Aug 24 11:19 2026-08-24_11-19-01.mp4
+Remove Dud:
+    rm /srv/pi-security/recordings/20
+-------------------------------------------------------------------------------------------
+Verify it can be read:
+    ffprobe /srv/pi-security/recordings/2026-08-24_11-19-01.mp4 
+Output:
+    admin@owl:~$ ffprobe /srv/pi-security/recordings/2026-08-24_11-19-01.mp4 
+    ffprobe version 7.1.5-0+deb13u1+rpt1 Copyright (c) 2007-2026 the FFmpeg developers
+      built with gcc 14 (Debian 14.2.0-19)
+      configuration: --prefix=/usr --extra-version=0+deb13u1+rpt1 --toolchain=hardened --incdir=/usr/include/aarch64-linux-gnu --enable-gpl --disable-stripping --disable-libmfx --disable-mmal --disable-omx --enable-gnutls --enable-libaom --enable-libass --enable-libbs2b --enable-libcdio --enable-libcodec2 --enable-libdav1d --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libglslang --enable-libgme --enable-libgsm --enable-libharfbuzz --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzimg --enable-openal --enable-opencl --enable-opengl --disable-sndio --disable-libvpl --libdir=/usr/lib/aarch64-linux-gnu --arch=arm64 --enable-neon --enable-v4l2-request --enable-libudev --enable-epoxy --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-vout-drm --enable-chromaprint --enable-frei0r --enable-ladspa --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-libjack --enable-libpulse --enable-librabbitmq --enable-librist --enable-libsrt --enable-libssh --enable-libsvtav1 --enable-libx264 --enable-libzmq --enable-libzvbi --enable-lv2 --enable-sand --enable-sdl2 --enable-libplacebo --enable-librav1e --enable-pocketsphinx --enable-librsvg --enable-libjxl --enable-shared
+      libavutil      59. 39.100 / 59. 39.100
+      libavcodec     61. 19.101 / 61. 19.101
+      libavformat    61.  7.103 / 61.  7.103
+      libavdevice    61.  3.100 / 61.  3.100
+      libavfilter    10.  5.100 / 10.  5.100
+      libswscale      8.  3.100 /  8.  3.100
+      libswresample   5.  3.100 /  5.  3.100
+      libpostproc    58.  3.100 / 58.  3.100
+    Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/srv/pi-security/recordings/2026-08-24_11-19-01.mp4':
+      Metadata:
+        major_brand     : isom
+        minor_version   : 512
+        compatible_brands: isomiso2avc1mp41
+        title           : Session streamed by "TP-Link RTSP Server"
+        encoder         : Lavf61.7.103
+      Duration: 00:00:48.34, start: 0.000000, bitrate: 1203 kb/s
+      Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 1920x1080, 1202 kb/s, 14.87 fps, 14.75 tbr, 90k tbn (default)
+          Metadata:
+            handler_name    : VideoHandler
+            vendor_id       : [0][0][0][0]
+    admin@owl:~$
+# Important bits: H.264, 1920x1080, 14.87 fps, Duration 48.34 seconds, size 1203 kb
+
+Step 3: Make recording automatic
+# Create a systemd service:
+    sudo nano /etc/systemd/system/pi-security-recorder.service
+# Paste this:
+
+    [Unit]
+    Description=Pi Security Camera Recorder
+    After=network-online.target
+    Wants=network-online.target
+
+    [Service]
+    Type=simple
+    User=admin
+    ExecStart=/usr/bin/ffmpeg \
+        -rtsp_transport tcp \
+        -i rtsp://CaptainOwl:N49VRJb2e2@192.168.86.137:554/stream1 \
+        -map 0:v:0 \
+        -c:v copy \
+        -an \
+        -f segment \
+        -segment_time 60 \
+        -reset_timestamps 1 \
+        -strftime 1 \
+        /srv/pi-security/recordings/%Y-%m-%d_%H-%M-%S.mp4
+
+    Restart=always
+    RestartSec=5
+
+    [Install]
+    WantedBy=multi-user.target
+
+# Verify file exits:
+    ls -l /etc/systemd/system/pi-security-recorder.service
+# Output:
+    admin@owl:~$ ls -l /etc/systemd/system/pi-security-recorder.service
+    -rw-r--r-- 1 root root 588 Aug 24 11:38 /etc/systemd/system/pi-security-recorder.service
+    admin@owl:~$
+
+Step 3.1: Tell systemd about new service
+    sudo systemctl daemon-reload
+Step 3.2: Enable automatic startup
+    sudo systemctl enable pi-security-recorder
+Step 3.3 Start tge recorder
+    sudo systemctl start pi-security-recorder
+Step 3.4: Check its status
+    sudo systemctl status pi-security-recorder
+# Output:
+admin@owl:~$ sudo systemctl status pi-security-recorder
+● pi-security-recorder.service - Pi Security Camera Recorder
+     Loaded: loaded (/etc/systemd/system/pi-security-recorder.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2026-08-24 11:52:31 PDT; 7s ago
+ Invocation: a703b77e34a04587818c19420f3d1f2e
+   Main PID: 2579 (ffmpeg)
+      Tasks: 3 (limit: 8796)
+        CPU: 501ms
+     CGroup: /system.slice/pi-security-recorder.service
+             └─2579 /usr/bin/ffmpeg -rtsp_transport tcp -i rtsp://CaptainOwl:N49VRJb2e2@192.168.1.50:554/stream1 -map 0:v:0 >
+
+Aug 24 11:52:37 owl ffmpeg[2579]: [245B blob data]
+Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504744, current: 486013; chang>
+Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504745, current: 491953; chang>
+Aug 24 11:52:37 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504746, current: 497983; chang>
+Aug 24 11:52:38 owl ffmpeg[2579]: [vost#0:0/copy @ 0x55ae720140] Non-monotonic DTS; previous: 504747, current: 503833; chang>
+Aug 24 11:52:38 owl ffmpeg[2579]: [245B blob data]
+lines 1-16
+
+Step 3.5: Tests
+# Verify file is actually growing:
+    ls -lh /srv/pi-security/recordings
+# Wait 10-20 seconds run again:
+    ls -lh /srv/pi-security/recordings
+# Reboot
+    sudo Reboot
+# After Reboot
+    sudo systemctl status pi-security-recorder
+    ls -lh /srv/pi-security/recordings
+
+Step 3.6: Change 10 second to 5 minute clips
+# Change -segment_time 60 to -segment_time 300
+    sudo nano /etc/systemd/system/pi-security-recorder.service
+# Restart daemon
+sudo systemctl daemon-reload
+sudo systemctl restart pi-security-recorder
+# Check recordings
+    ls -lh /srv/pi-security/recordings/
+
+Step 3.6: More tests
+# check that FFmpeg hasn't restarted
+    systemctl show pi-security-recorder -p NRestarts
+# Then:
+    sudo systemctl status pi-security-recorder
+#should still say active
+# Check recent FFmpeg log:
+    sudo journalctl -u pi-security-recorder -n 30 --no-pager

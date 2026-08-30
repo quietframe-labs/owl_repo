@@ -1,0 +1,78 @@
+# New TEMPLATED Repository Scheme
+    pi-security/
+    │
+    ├── README.md
+    ├── requirements.txt
+    ├── .gitignore
+    │
+    ├── web/
+    │   │
+    │   ├── main.py
+    │   │
+    │   ├── api/
+    │   │   ├── __init__.py
+    │   │   ├── status.py
+    │   │   ├── recordings.py
+    │   │   └── events.py
+    │   │
+    │   └── dashboard/
+    │       ├── manage.py
+    │       │
+    │       ├── dashboard/
+    │       │   ├── settings.py
+    │       │   ├── urls.py
+    │       │   ├── wsgi.py
+    │       │   └── asgi.py
+    │       │
+    │       └── security/
+    │           ├── views.py
+    │           ├── urls.py
+    │           │
+    │           ├── templates/
+    │           │   └── security/
+    │           │       ├── base.html
+    │           │       ├── dashboard.html
+    │           │       ├── live.html
+    │           │       ├── recordings.html
+    │           │       └── events.html
+    │           │
+    │           └── static/
+    │               └── security/
+    │                   ├── css/
+    │                   └── js/
+    │
+    ├── scripts/
+    │   ├── retention.sh
+    │   ├── storage-monitor.sh
+    │   └── status.sh
+    │
+    ├── systemd/
+    │   ├── pi-security-web.service
+    │   ├── pi-security-live.service
+    │   ├── pi-security-recorder.service
+    │   └── ...
+    │
+    └── docs/
+        └── architecture.md
+
+
+# Step 1: 
+### Add venv to project:
+#### from project home
+    python -m venv .venv
+### Activate venv
+#### for powershell
+    .\.venv\Scripts\Activate.ps1
+
+# Step 2: Install django
+    pip install django a2wsgi
+#### FastAPI recommends the separate a2wsgi package when using django
+### then:
+    pip freeze > requirments.txt
+
+# Step 3: Create django project:
+### move into web
+    cd .\web\
+### start django
+    django-admin startproject dashboard
+#### See Django Quickstart.md

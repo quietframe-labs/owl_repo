@@ -1,0 +1,38 @@
+# Verify services
+    systemctl is-active pi-security-recorder.service
+    systemctl is-active pi-security-live.service
+    systemctl is-active pi-security-web.service
+    systemctl is-active pi-security-retention.timer
+    systemctl is-active pi-security-storage-monitor.timer
+
+# Overall system health:
+    pi-security-status
+
+
+# fstab
+    sudo nano /etc/fstab
+
+# systemd service files
+    sudo nano /etc/systemd/system/pi-security-recorder.service
+    sudo nano /etc/systemd/system/pi-security-storage-monitor.service
+    sudo nano /etc/systemd/system/pi-security-storage-monitor.timer
+    sudo nano /etc/systemd/system/pi-security-retention.timer
+    sudo nano /etc/systemd/system/pi-security-retention.service
+    sudo nano /etc/systemd/system/pi-security-web.service
+    sudo nano /etc/systemd/system/pi-security-live.service
+
+
+# FastAPI 
+    nano /srv/pi-security/web/main.py
+    nano /srv/pi-security/web/static/index.html
+    nano /srv/pi-security/web/static/recordings.html
+
+
+
+# script
+    sudo nano /usr/local/bin/pi-security-retention.sh
+    sudo nano /usr/local/bin/pi-security-storage-monitor.sh
+
+
+
+
