@@ -76,3 +76,29 @@
 ### start django
     django-admin startproject dashboard
 #### See Django Quickstart.md
+
+    Browser
+    │
+    ▼
+    Uvicorn / FastAPI :8000
+    │
+    ├── /api/status              FastAPI
+    ├── /api/recordings          FastAPI
+    ├── /recordings/<filename>   FastAPI
+    ├── /live/*                  FastAPI static HLS
+    ├── /static/*                Django collected static files
+    │
+    └── everything else          Django
+            ├── /
+            ├── /live-view/
+            ├── /recordings/
+            ├── /admin/
+            └── /accounts/login/
+
+# Step 3: Make git checkpoint
+    git status
+    git add .
+    git commit -m "Working Django test page before FastAPI integration"
+    git tag django-test-working
+    git push
+    git push origin django-test-working
