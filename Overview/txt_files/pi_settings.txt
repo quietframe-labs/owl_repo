@@ -1,3 +1,0 @@
-Hostname: owl
-Username: admin
-ip address: 192.168.86.49 <- static
