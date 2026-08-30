@@ -1,0 +1,95 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+        Pi Security
+        {% endblock %}
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'dashboard_app/css/app.css' %}"
+    >
+
+    {% block head %}
+    {% endblock %}
+
+</head>
+
+<body>
+
+<header class="site-header">
+
+    <h1>Pi Security</h1>
+
+    {% if user.is_authenticated %}
+
+    <nav>
+
+        <a href="{% url 'dashboard_app:dashboard' %}">
+            Dashboard
+        </a>
+
+        <a href="{% url 'dashboard_app:live' %}">
+            Live View
+        </a>
+
+        <a href="{% url 'dashboard_app:recordings' %}">
+            Recordings
+        </a>
+
+        {% if user.is_staff %}
+
+        <a href="/admin/">
+            Admin
+        </a>
+
+        {% endif %}
+
+    </nav>
+
+    <form
+        method="post"
+        action="{% url 'logout' %}"
+    >
+
+        {% csrf_token %}
+
+        <button type="submit">
+            Log Out
+        </button>
+
+    </form>
+
+    {% endif %}
+
+</header>
+
+
+<main class="page-container">
+
+    {% block content %}
+    {% endblock %}
+
+</main>
+
+
+{% block scripts %}
+{% endblock %}
+
+</body>
+
+</html>

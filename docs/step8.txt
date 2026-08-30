@@ -1,0 +1,172 @@
+step8
+
+Step 6: Update dashboard/settings.py
+
+Open:
+
+owl_repo\web\dashboard\settings.py
+
+At the top, make sure you have:
+
+import os
+from pathlib import Path
+
+You should already have:
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+Keep that.
+
+6.1 Secret key
+
+Find:
+
+SECRET_KEY = "..."
+
+Replace it with:
+
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "development-only-secret-key",
+)
+
+Your PC will use the development fallback.
+
+The Pi will have its own secret later.
+
+6.2 Debug
+
+Replace:
+
+DEBUG = True
+
+with:
+
+DEBUG = os.environ.get(
+    "DJANGO_DEBUG",
+    "True",
+).lower() == "true"
+6.3 Allowed hosts
+
+Replace your current ALLOWED_HOSTS with:
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        "localhost,127.0.0.1",
+    ).split(",")
+    if host.strip()
+]
+6.4 Verify dashboard_app
+
+Your INSTALLED_APPS should contain:
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+
+    "dashboard_app",
+]
+
+If it's already there, leave it.
+
+6.5 Templates
+
+Your default Django template configuration should contain:
+
+"APP_DIRS": True,
+
+For example:
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+
+You do not need to add your app's template directory manually.
+
+Step 7: Make the database location configurable
+
+Find:
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+
+Replace it with:
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": Path(
+            os.environ.get(
+                "DJANGO_DB_PATH",
+                BASE_DIR / "db.sqlite3",
+            )
+        ),
+    }
+}
+
+On your PC:
+
+web/db.sqlite3
+
+will still be used.
+
+On the Pi we'll instead use:
+
+/srv/pi-security/data/dashboard.sqlite3
+
+This prevents git pull operations from ever having anything to do with the production database. A small but useful separation between "source code" and "the place where your passwords live."
+
+Step 8: Configure static files
+
+Near the bottom of settings.py, make sure you have:
+
+STATIC_URL = "/static/"
+
+Add:
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+So that section becomes:
+
+STATIC_URL = "/static/"
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+Later:
+
+python manage.py collectstatic
+
+will put everything there, including Django admin CSS.
+
+Step 9: Configure login/logout
+
+Also add:
+
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+For now we'll require login for the Django UI.
+
+We'll secure the FastAPI APIs separately after the migration works.

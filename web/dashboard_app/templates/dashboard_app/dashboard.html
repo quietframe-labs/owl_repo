@@ -1,0 +1,149 @@
+{% extends "dashboard_app/base.html" %}
+
+
+{% block title %}
+Dashboard | Pi Security
+{% endblock %}
+
+
+{% block content %}
+
+<h2>System Dashboard</h2>
+
+
+<div class="grid">
+
+    <section class="card">
+
+        <h3>Storage</h3>
+
+        <div id="storage">
+            Loading...
+        </div>
+
+    </section>
+
+
+    <section class="card">
+
+        <h3>Services</h3>
+
+        <div id="services">
+            Loading...
+        </div>
+
+    </section>
+
+
+    <section class="card">
+
+        <h3>Latest Recording</h3>
+
+        <div id="latest-recording">
+            Loading...
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+
+async function loadStatus() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/status",
+                {
+                    cache: "no-store"
+                }
+            );
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+        const data =
+            await response.json();
+
+
+        const storage =
+            data.storage || {};
+
+
+        document.getElementById(
+            "storage"
+        ).innerHTML = `
+            <p>
+                Mounted:
+                <strong>
+                    ${storage.mounted ? "Yes" : "No"}
+                </strong>
+            </p>
+
+            <p>
+                Used:
+                ${storage.percent_used ?? "Unknown"}%
+            </p>
+        `;
+
+
+        document.getElementById(
+            "services"
+        ).innerHTML = `
+            <pre>${JSON.stringify(
+                data.services || {},
+                null,
+                2
+            )}</pre>
+        `;
+
+
+        const latest =
+            data.latest_recording || {};
+
+
+        document.getElementById(
+            "latest-recording"
+        ).textContent =
+            latest.filename
+            || "No recording found";
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        document.getElementById(
+            "storage"
+        ).textContent =
+            "Unable to load system status.";
+
+    }
+
+}
+
+
+loadStatus();
+
+
+setInterval(
+    loadStatus,
+    10000
+);
+
+</script>
+
+{% endblock %}

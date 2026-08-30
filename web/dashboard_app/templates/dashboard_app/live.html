@@ -1,0 +1,146 @@
+{% extends "dashboard_app/base.html" %}
+{% load static %}
+
+
+{% block title %}
+Live View | Pi Security
+{% endblock %}
+
+
+{% block content %}
+
+<h2>Live Camera</h2>
+
+
+<section class="card">
+
+    <video
+        id="live-video"
+        controls
+        autoplay
+        muted
+        playsinline
+    ></video>
+
+    <p id="stream-status">
+        Connecting...
+    </p>
+
+</section>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{% static 'dashboard_app/js/hls.min.js' %}">
+</script>
+
+
+<script>
+
+const video =
+    document.getElementById(
+        "live-video"
+    );
+
+
+const statusElement =
+    document.getElementById(
+        "stream-status"
+    );
+
+
+const streamUrl =
+    "/live/camera01/index.m3u8";
+
+
+if (
+    typeof Hls !== "undefined"
+    &&
+    Hls.isSupported()
+) {
+
+    const hls =
+        new Hls();
+
+
+    hls.loadSource(
+        streamUrl
+    );
+
+
+    hls.attachMedia(
+        video
+    );
+
+
+    hls.on(
+        Hls.Events.MANIFEST_PARSED,
+        () => {
+
+            statusElement.textContent =
+                "Live";
+
+            video.play().catch(
+                () => {}
+            );
+
+        }
+    );
+
+
+    hls.on(
+        Hls.Events.ERROR,
+        (event, data) => {
+
+            console.error(
+                "HLS error:",
+                data
+            );
+
+            statusElement.textContent =
+                "Stream error";
+
+        }
+    );
+
+}
+
+else if (
+    video.canPlayType(
+        "application/vnd.apple.mpegurl"
+    )
+) {
+
+    video.src =
+        streamUrl;
+
+
+    video.addEventListener(
+        "loadedmetadata",
+        () => {
+
+            statusElement.textContent =
+                "Live";
+
+            video.play().catch(
+                () => {}
+            );
+
+        }
+    );
+
+}
+
+else {
+
+    statusElement.textContent =
+        "HLS playback is not supported.";
+
+}
+
+</script>
+
+{% endblock %}

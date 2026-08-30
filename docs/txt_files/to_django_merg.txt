@@ -95,10 +95,87 @@
             ├── /admin/
             └── /accounts/login/
 
-# Step 3: Make git checkpoint
+# Step 4: Make git checkpoint
     git status
     git add .
     git commit -m "Working Django test page before FastAPI integration"
     git tag django-test-working
     git push
     git push origin django-test-working
+#### gitignore
+    # Python
+    __pycache__/
+    *.py[cod]
+
+    # Virtual environments
+    .venv/
+    venv/
+
+    # Django local/runtime data
+    db.sqlite3
+    staticfiles/
+
+    # Secrets
+    .env
+    *.env
+
+    # IDE
+    .vscode/
+    .idea/
+
+    # OS
+    .DS_Store
+    Thumbs.db
+
+### Remove db.sqlite3:
+    git rm --cached db.sqlite3
+    git commit -m "Stop tracking Django database"
+
+# Step 5: Install the integration depency
+    python -m pip install a2wsgi
+    python -m django --version
+    python -m pip show a2wsgi
+### Update requirements:
+    python -m pip freeze > requirements.txt
+
+# Step 6: Set up Django application directories
+    dashboard_app/
+    ├── templates/
+    │   └── dashboard_app/
+    │       ├── base.html
+    │       ├── dashboard.html
+    │       ├── live.html
+    │       ├── recordings.html
+    │       └── login.html
+    │
+    └── static/
+        └── dashboard_app/
+            ├── css/
+            │   └── app.css
+            └── js/
+                └── hls.min.js
+### Inside dashboard_app:
+    mkdir static\dashboard_app\css -Force
+    mkdir static\dashboard_app\js -Force
+# Step 7: Move hls.min.js into Django static files
+#### hls.min.js lives on the pi
+### On pi run:
+    sudo find /srv/pi-security -type f -name "hls.min.js" 2>/dev/null
+### On PC run: 
+    scp admin@owl:/srv/pi-security/web/static/js/hls.min.js .
+### Move into Django static folder:
+    Move-Item .\hls.min.js .\dashboard_app\static\dashboard_app\js\hls.min.js
+### Confirm move:
+    dir .\dashboard_app\static\dashboard_app\js
+
+# Step 8: Update dashboard/settings.py
+### Open settings.py
+#### see note "step8"
+
+# Step 9: Update dashboard_app/urls.py
+
+# Step 10: Move django to pi
+### On pi:
+    systemctl show pi-security-web \
+        -p WorkingDirectory \
+        -p ExecStart
