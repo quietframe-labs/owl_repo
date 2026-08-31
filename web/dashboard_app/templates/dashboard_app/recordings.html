@@ -1,0 +1,186 @@
+{% extends "dashboard_app/base.html" %}
+
+
+{% block title %}
+Recordings | Pi Security
+{% endblock %}
+
+
+{% block content %}
+
+<h2>Recordings</h2>
+
+
+<section class="card">
+
+    <table>
+
+        <thead>
+
+            <tr>
+                <th>Filename</th>
+                <th>Size</th>
+                <th>Action</th>
+            </tr>
+
+        </thead>
+
+        <tbody id="recordings-table">
+
+            <tr>
+
+                <td colspan="3">
+                    Loading...
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</section>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+
+function formatBytes(bytes) {
+
+    if (!bytes) {
+
+        return "0 MB";
+
+    }
+
+    const mb =
+        bytes / 1024 / 1024;
+
+    return `${mb.toFixed(1)} MB`;
+
+}
+
+
+async function loadRecordings() {
+
+    const table =
+        document.getElementById(
+            "recordings-table"
+        );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/recordings",
+                {
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+
+        const recordings =
+            await response.json();
+
+
+        table.innerHTML =
+            "";
+
+
+        if (!recordings.length) {
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="3">
+                        No recordings found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+
+        }
+
+
+        for (
+            const recording
+            of recordings
+        ) {
+
+            const row =
+                document.createElement(
+                    "tr"
+                );
+
+
+            const url =
+                "/recordings/"
+                +
+                encodeURIComponent(
+                    recording.filename
+                );
+
+
+            row.innerHTML = `
+                <td>
+                    ${recording.filename}
+                </td>
+
+                <td>
+                    ${formatBytes(
+                        recording.size_bytes
+                    )}
+                </td>
+
+                <td>
+                    <a href="${url}">
+                        View
+                    </a>
+                </td>
+            `;
+
+
+            table.appendChild(
+                row
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="3">
+                    Failed to load recordings.
+                </td>
+            </tr>
+        `;
+
+    }
+
+}
+
+
+loadRecordings();
+
+</script>
+
+{% endblock %}
