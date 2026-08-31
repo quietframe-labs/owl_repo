@@ -56,11 +56,10 @@
         <a href="/admin/">
             Admin
         </a>
-        {% else %}
+        {% endif %}
         <a href="{% url 'login' %}">
             Log In
         </a>
-        {% endif %}
     </nav>
 
     <form
