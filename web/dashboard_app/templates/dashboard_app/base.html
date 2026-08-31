@@ -74,11 +74,13 @@
     </form>
 
     {% endif %}
+    {% if not user.is_authenticated %}
     <nav>
         <a href="{% url 'login' %}">
             Log In
         </a>
     </nav>
+    {% endif %}
 </header>
 
 
