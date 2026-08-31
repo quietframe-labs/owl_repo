@@ -57,9 +57,7 @@
             Admin
         </a>
         {% endif %}
-        <a href="{% url 'login' %}">
-            Log In
-        </a>
+        
     </nav>
 
     <form
@@ -76,7 +74,11 @@
     </form>
 
     {% endif %}
-
+    <nav>
+        <a href="{% url 'login' %}">
+            Log In
+        </a>
+    </nav>
 </header>
 
 
