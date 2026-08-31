@@ -179,3 +179,16 @@
     systemctl show pi-security-web \
         -p WorkingDirectory \
         -p ExecStart
+    sudo systemctl cat pi-security-web
+#### Move main.py to PC
+### on PC:
+    scp admin@owl:/srv/pi-security/web/main.py .\web\main.py
+
+
+
+
+### Reload and restart:
+    sudo systemctl daemon-reload
+    sudo systemctl restart pi-security-web
+    sleep 2
+
