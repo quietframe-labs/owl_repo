@@ -8,7 +8,7 @@ def dashboard(request):
 
 @login_required
 def live_view(request):
-    return render(request, 'dashboard_app/live_view.html')
+    return render(request, 'dashboard_app/live.html')
 
 @login_required
 def recordings(request):
