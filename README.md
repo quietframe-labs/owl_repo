@@ -15,6 +15,11 @@ For the live-view cache and recovery update:
 4. Run `sudo sh deploy/install-live-view.sh` from that checkout.
 5. Refresh `/live-view/` with Ctrl+F5.
 
+The HTTP check uses `http://owl:8000/live/camera01/index.m3u8`, since the web
+service may bind only to its Tailscale address. To check a different confirmed
+address, pass its full playlist URL as the installer's first argument.
+The check retries to allow time for the web service to start.
+
 The installer backs up the two production files under
 `/var/backups/pi-security-live-view.*`, restarts the web service, and checks
 that HLS responses contain `Cache-Control: no-store`. It restores the backed-up

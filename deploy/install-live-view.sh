@@ -3,6 +3,7 @@
 set -eu
 cd "$(dirname "$0")"
 test "$(id -u)" = 0 || { echo 'Run this installer with sudo.'; exit 1; }
+health_url=${1:-http://owl:8000/live/camera01/index.m3u8}
 web=$(systemctl show pi-security-web.service --property=WorkingDirectory --value)
 case "$web" in
     /*) ;;
@@ -44,9 +45,21 @@ cat "$backup/new-live.html" > "$web/$template"
 systemctl restart pi-security-web.service
 sleep 2
 systemctl is-active --quiet pi-security-web.service
-curl --fail --silent --show-error --max-time 10 -I \
-    http://127.0.0.1:8000/live/camera01/index.m3u8 > "$backup/response-headers.txt"
-grep -qi '^cache-control:.*no-store' "$backup/response-headers.txt"
+echo "Checking live output at $health_url"
+verified=false
+for attempt in 1 2 3 4 5; do
+    if curl --fail --silent --show-error --max-time 5 -I "$health_url" \
+        > "$backup/response-headers.txt" && \
+        grep -qi '^cache-control:.*no-store' "$backup/response-headers.txt"; then
+        verified=true
+        break
+    fi
+    sleep 2
+done
+if test "$verified" != true; then
+    echo "Could not verify updated HLS headers at $health_url" >&2
+    exit 1
+fi
 trap - EXIT
 echo 'Live-view update installed. Web service is active.'
 echo 'Refresh Live View with Ctrl+F5.'
