@@ -3,7 +3,11 @@
 set -eu
 cd "$(dirname "$0")"
 test "$(id -u)" = 0 || { echo 'Run this installer with sudo.'; exit 1; }
-web=/srv/pi-security/web
+web=$(systemctl show pi-security-web.service --property=WorkingDirectory --value)
+case "$web" in
+    /*) ;;
+    *) echo 'Web service has no absolute WorkingDirectory; stopping.' >&2; exit 1 ;;
+esac
 template=dashboard_app/templates/dashboard_app/live.html
 test -f "$web/main.py"
 test -f "$web/$template"

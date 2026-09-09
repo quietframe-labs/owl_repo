@@ -1,8 +1,10 @@
 # Owl
 
 Changes flow from the PC checkout to GitHub, then to Owl's checkout.
-The web service runs from `/srv/pi-security/web`. A Git pull in a separate
-checkout does not update that running directory until the installer runs.
+Owl's checkout is `/srv/pi-security/app/owl_repo`, and its web service runs
+from that checkout's `web` directory. The installer reads the service's
+`WorkingDirectory` so it does not accidentally update the legacy
+`/srv/pi-security/web` installation.
 
 For the live-view cache and recovery update:
 
