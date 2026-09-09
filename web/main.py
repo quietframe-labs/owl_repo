@@ -268,9 +268,21 @@ def get_recording(filename: str):
 # Live HLS files
 # ---------------------------------------------------------
 
+class LiveStaticFiles(StaticFiles):
+    """FFmpeg reuses segment names after restart; never reuse cached output."""
+
+    def is_not_modified(self, response_headers, request_headers):
+        return False
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        return response
+
+
 app.mount(
     "/live",
-    StaticFiles(
+    LiveStaticFiles(
         directory=str(LIVE_PATH),
         check_dir=False
     ),

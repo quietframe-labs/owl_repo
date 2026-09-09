@@ -39,108 +39,87 @@ Live View | Pi Security
 
 
 <script>
+(() => {
+    const video = document.getElementById('live-video');
+    const status = document.getElementById('stream-status');
+    const streamUrl = '/live/camera01/index.m3u8';
+    let hls = null;
+    let retry = null;
+    let lastProgress = Date.now();
+    let previousTime = -1;
+    let stopped = false;
 
-const video =
-    document.getElementById(
-        "live-video"
-    );
+    function play() {
+        video.play().catch(() => {
+            status.textContent = 'Press Play to watch live.';
+        });
+    }
 
+    function reconnect() {
+        if (retry || stopped) return;
+        status.textContent = 'Reconnecting to live camera...';
+        retry = setTimeout(() => {
+            retry = null;
+            connect();
+        }, 3000);
+    }
 
-const statusElement =
-    document.getElementById(
-        "stream-status"
-    );
-
-
-const streamUrl =
-    "/live/camera01/index.m3u8";
-
-
-if (
-    typeof Hls !== "undefined"
-    &&
-    Hls.isSupported()
-) {
-
-    const hls =
-        new Hls();
-
-
-    hls.loadSource(
-        streamUrl
-    );
-
-
-    hls.attachMedia(
-        video
-    );
-
-
-    hls.on(
-        Hls.Events.MANIFEST_PARSED,
-        () => {
-
-            statusElement.textContent =
-                "Live";
-
-            video.play().catch(
-                () => {}
-            );
-
+    function connect() {
+        if (hls) { hls.destroy(); hls = null; }
+        lastProgress = Date.now();
+        previousTime = -1;
+        status.textContent = 'Connecting...';
+        // A new session URL also bypasses playlists cached before this fix.
+        const url = streamUrl + '?session=' + Date.now();
+        if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            hls = new Hls({
+                xhrSetup: xhr => {
+                    xhr.setRequestHeader('Cache-Control', 'no-cache');
+                }
+            });
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(url));
+            hls.on(Hls.Events.MANIFEST_PARSED, play);
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) reconnect();
+            });
+            hls.attachMedia(video);
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+            video.load();
+            play();
+        } else {
+            stopped = true;
+            status.textContent = 'HLS playback is not supported.';
         }
-    );
+    }
 
-
-    hls.on(
-        Hls.Events.ERROR,
-        (event, data) => {
-
-            console.error(
-                "HLS error:",
-                data
-            );
-
-            statusElement.textContent =
-                "Stream error";
-
+    video.addEventListener('timeupdate', () => {
+        if (video.currentTime !== previousTime) {
+            previousTime = video.currentTime;
+            lastProgress = Date.now();
+            if (!video.paused && !retry) status.textContent = 'Live';
         }
-    );
-
-}
-
-else if (
-    video.canPlayType(
-        "application/vnd.apple.mpegurl"
-    )
-) {
-
-    video.src =
-        streamUrl;
-
-
-    video.addEventListener(
-        "loadedmetadata",
-        () => {
-
-            statusElement.textContent =
-                "Live";
-
-            video.play().catch(
-                () => {}
-            );
-
-        }
-    );
-
-}
-
-else {
-
-    statusElement.textContent =
-        "HLS playback is not supported.";
-
-}
-
+    });
+    video.addEventListener('waiting', () => {
+        if (!retry) status.textContent = 'Buffering...';
+    });
+    video.addEventListener('pause', () => {
+        if (!retry) status.textContent = 'Paused';
+    });
+    video.addEventListener('play', () => { lastProgress = Date.now(); });
+    video.addEventListener('error', reconnect);
+    video.addEventListener('ended', reconnect);
+    const monitor = setInterval(() => {
+        if (!video.paused && Date.now() - lastProgress > 20000) reconnect();
+    }, 5000);
+    window.addEventListener('pagehide', () => {
+        stopped = true;
+        clearInterval(monitor);
+        clearTimeout(retry);
+        if (hls) hls.destroy();
+    });
+    connect();
+})();
 </script>
 
 {% endblock %}
