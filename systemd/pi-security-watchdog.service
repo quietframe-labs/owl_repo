@@ -1,0 +1,13 @@
+[Unit]
+Description=Pi Security recording and live output freshness watchdog
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/pi-security/pi-security-health.py --watchdog
+RuntimeDirectory=pi-security-watchdog
+RuntimeDirectoryPreserve=yes
+TimeoutStartSec=210
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pi-security-watchdog

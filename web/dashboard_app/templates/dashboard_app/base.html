@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Owl | Pi Security{% endblock %}</title>
-<link rel="stylesheet" href="{% static 'dashboard_app/css/app.css' %}?v=20260909-recordings">
+<link rel="stylesheet" href="{% static 'dashboard_app/css/app.css' %}?v=20260909-activity">
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -16,7 +16,8 @@
 <nav aria-label="Main navigation">
 <a href="{% url 'dashboard_app:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Overview</a>
 <a href="{% url 'dashboard_app:live' %}" {% if request.resolver_match.url_name == 'live' %}aria-current="page"{% endif %}>Live view</a>
-<a href="{% url 'dashboard_app:recordings' %}" {% if request.resolver_match.url_name == 'recordings' %}aria-current="page"{% endif %}>Recordings</a>
+<a href="{% url 'dashboard_app:activity' %}" {% if request.resolver_match.url_name == 'activity' %}aria-current="page"{% endif %}>Activity</a>
+<a href="{% url 'dashboard_app:recordings' %}" {% if request.resolver_match.url_name == 'recordings' %}aria-current="page"{% endif %}>All recordings</a>
 {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
 </nav>
 <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>

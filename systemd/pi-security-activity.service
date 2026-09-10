@@ -1,0 +1,21 @@
+[Unit]
+Description=Index motion in completed Owl recordings
+After=local-fs.target
+RequiresMountsFor=/srv/pi-security/storage
+
+[Service]
+Type=oneshot
+User=admin
+Group=admin
+EnvironmentFile=-/etc/pi-security/activity.env
+ExecStart=/usr/bin/python3 /usr/local/lib/pi-security/scan_recordings.py
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=50%
+TimeoutStartSec=120min
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/pi-security/storage/events
+UMask=0022

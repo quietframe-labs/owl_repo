@@ -1,5 +1,8 @@
 # Owl
 
+See [activity detection and archive views](docs/activity-guide.md) for motion
+indexing, thumbnails, completion checks, sensitivity tuning, and systemd source.
+
 See [the update and recovery guide](docs/owl-maintenance-guide.md) for the full
 PC → GitHub → Owl workflow, verification commands, and troubleshooting.
 

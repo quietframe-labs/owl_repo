@@ -15,4 +15,8 @@ def live_view(request):
 
 @login_required
 def recordings(request):
-    return render(request, 'dashboard_app/recordings.html')
+    return render(request, 'dashboard_app/recordings.html', {'activity_only': False})
+
+@login_required
+def activity(request):
+    return render(request, 'dashboard_app/recordings.html', {'activity_only': True})

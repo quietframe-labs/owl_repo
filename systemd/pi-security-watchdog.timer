@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Pi Security output freshness every 15 seconds
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=15s
+AccuracySec=1s
+Unit=pi-security-watchdog.service
+
+[Install]
+WantedBy=timers.target

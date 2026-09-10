@@ -2,6 +2,9 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from datetime import datetime
+from activity import indexed_activity, activity_for, DB_PATH as ACTIVITY_DB
+from recording_files import complete_mp4, open_writers
 
 from a2wsgi import WSGIMiddleware
 from django.conf import settings as django_settings
@@ -103,32 +106,8 @@ def system_status():
 
     usage = shutil.disk_usage(STORAGE_PATH)
 
-    latest_recording = None
-
-    if RECORDINGS_PATH.exists():
-
-        recordings = list(
-            RECORDINGS_PATH.glob("*.mp4")
-        )
-
-        if recordings:
-
-            newest = max(
-                recordings,
-                key=lambda file:
-                    file.stat().st_mtime
-            )
-
-            latest_recording = {
-                "filename":
-                    newest.name,
-
-                "size_bytes":
-                    newest.stat().st_size,
-
-                "modified":
-                    newest.stat().st_mtime
-            }
+    completed = list_recordings()
+    latest_recording = completed[0] if completed else None
 
     return {
 
@@ -198,12 +177,25 @@ def list_recordings():
         return []
 
     recordings = []
+    activity_index = indexed_activity()
+    writers = open_writers()
 
     for recording in RECORDINGS_PATH.glob(
         "*.mp4"
     ):
 
-        stat = recording.stat()
+        try:
+            stat = recording.stat()
+        except FileNotFoundError:
+            continue
+        activity = activity_for(recording, stat, activity_index)
+        row = activity_index.get(recording.name, {})
+        if activity['status'] not in ('motion', 'quiet') or not row.get('thumbnail') or not complete_mp4(recording, writers):
+            continue
+        try:
+            recorded_at = datetime.strptime(recording.stem, '%Y-%m-%d_%H-%M-%S')
+        except ValueError:
+            recorded_at = datetime.fromtimestamp(stat.st_mtime)
 
         recordings.append({
             "filename":
@@ -213,7 +205,13 @@ def list_recordings():
                 stat.st_size,
 
             "modified":
-                stat.st_mtime
+                stat.st_mtime,
+            "day": recorded_at.strftime('%Y-%m-%d'),
+            "day_label": recorded_at.strftime('%A, %B %d, %Y'),
+            "display_title": 'Camera 01 · ' + recorded_at.strftime('%I:%M:%S %p').lstrip('0'),
+            "recorded_at": recorded_at.isoformat(),
+            "activity": activity,
+            "thumbnail_url": '/api/activity/thumbnail/' + row['thumbnail']
         })
 
     recordings.sort(
@@ -228,6 +226,30 @@ def list_recordings():
 # ---------------------------------------------------------
 # API: Serve recording
 # ---------------------------------------------------------
+
+@app.get('/api/activity/thumbnail/{filename}')
+def activity_thumbnail(filename: str):
+    import re
+    if not re.fullmatch(r'[a-f0-9]{64}\.jpg', filename):
+        raise HTTPException(status_code=404)
+    path = ACTIVITY_DB.parent / 'thumbnails' / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404)
+    return FileResponse(path, media_type='image/jpeg')
+
+
+@app.get('/api/activity/status')
+def activity_status():
+    index = indexed_activity()
+    counts = {'motion': 0, 'quiet': 0, 'pending': 0, 'error': 0}
+    for path in RECORDINGS_PATH.glob('*.mp4'):
+        try:
+            state = activity_for(path, path.stat(), index)['status']
+            counts[state] = counts.get(state, 0) + 1
+        except FileNotFoundError:
+            continue
+    return {'counts': counts, 'installed': ACTIVITY_DB.exists()}
+
 
 @app.get("/recordings/{filename}")
 def get_recording(filename: str, download: bool = False):

@@ -1,13 +1,15 @@
 {% extends "dashboard_app/base.html" %}
-{% block title %}Recordings | Owl{% endblock %}
+{% block title %}{% if activity_only %}Activity{% else %}All recordings{% endif %} | Owl{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">Camera 01 · Archive</p><h2>Recordings</h2><p>Watch saved footage here, or download a copy.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">Camera 01 · Archive</p><h2>{% if activity_only %}Activity{% else %}All recordings{% endif %}</h2><p>{% if activity_only %}Recordings with detected motion.{% else %}Completed recordings, organized by day.{% endif %}</p></div><a href="{% if activity_only %}{% url 'dashboard_app:recordings' %}{% else %}{% url 'dashboard_app:activity' %}{% endif %}">{% if activity_only %}All recordings →{% else %}View activity →{% endif %}</a></div>
+<p id="activity-summary" class="section-note" role="status">Loading activity index…</p>
 <section id="recording-viewer" class="card video-card" hidden aria-labelledby="viewer-title">
 <div class="viewer-heading"><div><p class="eyebrow">Now viewing</p><h3 id="viewer-title" tabindex="-1"></h3></div><button id="close-viewer" class="secondary" type="button">Close player</button></div>
 <video id="recording-video" controls playsinline preload="metadata"></video>
 <div class="viewer-footer"><p id="playback-status" role="status">Select Play to watch.</p><a id="viewer-download" class="download-link">Download recording ↓</a></div>
 </section>
 <div class="table-tools"><input id="recording-search" type="search" aria-label="Search recordings" placeholder="Search by date or filename…" disabled><span id="recording-count" class="muted" role="status">Loading…</span></div>
+<div class="date-filter"><label for="recording-day">Recording day</label><input id="recording-day" type="date"><button id="clear-filters" class="secondary" type="button">Clear filters</button></div>
 <div id="recording-tiles" class="recording-grid"><p class="empty-state">Loading recordings…</p></div>
 <button id="show-more" type="button" hidden style="margin-top:1rem">Show more</button>
 {% endblock %}
@@ -19,6 +21,8 @@ const more = document.getElementById('show-more');
 const viewer = document.getElementById('recording-viewer');
 const video = document.getElementById('recording-video');
 const playbackStatus = document.getElementById('playback-status');
+const activityOnly = {{ activity_only|yesno:"true,false" }};
+const dayFilter = document.getElementById('recording-day');
 let recordings = [], limit = 48, selectedFilename = null;
 function node(tag, text, className) {
     const item = document.createElement(tag);
@@ -30,10 +34,13 @@ function mediaUrl(filename) { return '/recordings/' + encodeURIComponent(filenam
 function openRecording(recording) {
     selectedFilename = recording.filename;
     viewer.hidden = false;
-    document.getElementById('viewer-title').textContent = recording.filename;
+    document.getElementById('viewer-title').textContent = recording.display_title + ' · ' + recording.day;
     document.getElementById('viewer-download').href = mediaUrl(recording.filename) + '?download=true';
     video.pause();
     video.src = mediaUrl(recording.filename);
+    video.onloadedmetadata = () => {
+        if (activityOnly && recording.activity?.first_motion_seconds != null) video.currentTime = Math.min(Math.max(0, recording.activity.first_motion_seconds - 2), Math.max(0, video.duration - 1));
+    };
     video.load();
     playbackStatus.textContent = 'Loading recording…';
     document.getElementById('viewer-title').focus({preventScroll:true});
@@ -51,32 +58,39 @@ video.addEventListener('waiting', () => { playbackStatus.textContent = 'Bufferin
 video.addEventListener('ended', () => { playbackStatus.textContent = 'End of recording'; });
 video.addEventListener('error', () => { playbackStatus.textContent = 'This recording cannot be played yet. It may still be recording, or the format may not be supported. Try another clip or download it.'; });
 function renderRecordings() {
-    const matches = recordings.filter(item => item.filename.toLowerCase().includes(search.value.toLowerCase()));
+    const matches = recordings.filter(item => (!activityOnly || item.activity?.status === 'motion') && (!dayFilter.value || item.day === dayFilter.value) && [item.filename,item.display_title,item.day_label].join(' ').toLowerCase().includes(search.value.toLowerCase())).sort((a,b) => b.recorded_at.localeCompare(a.recorded_at));
     tiles.replaceChildren();
     document.getElementById('recording-count').textContent = matches.length + ' recording' + (matches.length === 1 ? '' : 's');
     more.hidden = matches.length <= limit;
-    if (!matches.length) tiles.append(node('p', search.value ? 'No recordings match your search.' : 'No recordings yet.', 'empty-state'));
+    if (!matches.length) tiles.append(node('p', search.value || dayFilter.value ? 'No recordings match your filters.' : 'No indexed recordings here yet. Clips appear after completion and scanning.', 'empty-state'));
+    let currentDay = null;
     for (const recording of matches.slice(0, limit)) {
+        if (currentDay !== recording.day) { tiles.append(node('h3',recording.day_label,'recording-day-heading')); currentDay = recording.day; }
         const tile = node('article', '', 'card recording-tile');
         const view = node('button', '', 'recording-open');
         view.type = 'button'; view.dataset.filename = recording.filename;
-        view.setAttribute('aria-label', 'View ' + recording.filename);
+        view.setAttribute('aria-label', 'View ' + recording.display_title);
         view.setAttribute('aria-controls', 'recording-viewer');
-        const icon = node('span', '▶', 'recording-icon');
-        icon.setAttribute('aria-hidden', 'true');
+        const icon = document.createElement('img');
+        icon.src = recording.thumbnail_url; icon.alt = recording.activity?.status === 'motion' ? 'Frame from detected motion' : 'Middle of recording';
+        icon.className = 'recording-thumbnail'; icon.loading = 'lazy'; icon.width = 480; icon.height = 270;
         view.append(icon, node('span', 'View recording', 'recording-action'));
         view.addEventListener('click', () => openRecording(recording));
-        const title = node('h3', recording.filename, 'recording-name');
+        const title = node('h4', recording.display_title, 'recording-name');
+        const filename = node('p', recording.filename, 'recording-file');
+        const status = node('p', recording.activity?.status === 'motion' ? 'Motion detected' : 'No motion detected', 'recording-file');
         const footer = node('div', '', 'tile-footer');
         const download = node('a', 'Download ↓', 'download-link');
         download.href = mediaUrl(recording.filename) + '?download=true';
         download.setAttribute('aria-label', 'Download ' + recording.filename);
         footer.append(node('span', (recording.size_bytes / 1024 / 1024).toFixed(1) + ' MB', 'muted'), download);
-        tile.append(view, title, footer);
+        tile.append(view, title, filename, status, footer);
         tiles.append(tile);
     }
 }
 search.addEventListener('input', () => { limit = 48; renderRecordings(); });
+dayFilter.addEventListener('change', () => { limit=48; renderRecordings(); });
+document.getElementById('clear-filters').addEventListener('click', () => { search.value=''; dayFilter.value=''; limit=48; renderRecordings(); });
 more.addEventListener('click', () => { limit += 48; renderRecordings(); });
 async function loadRecordings() {
     try {
@@ -90,6 +104,16 @@ async function loadRecordings() {
         document.getElementById('recording-count').textContent = 'Unavailable';
     }
 }
+async function loadActivityStatus() {
+    const summary = document.getElementById('activity-summary');
+    try {
+        const response = await fetch('/api/activity/status', {cache:'no-store'});
+        if (!response.ok) throw new Error();
+        const data = await response.json(), c = data.counts;
+        summary.textContent = data.installed ? c.motion + ' with motion · ' + c.quiet + ' quiet · ' + c.pending + ' recording or awaiting scan · ' + c.error + ' scan errors. Reload to refresh.' : 'Activity scanner is not installed yet. Completed clips appear after scanning.';
+    } catch { summary.textContent = 'Activity scan status unavailable.'; }
+}
 loadRecordings();
+loadActivityStatus();
 </script>
 {% endblock %}
