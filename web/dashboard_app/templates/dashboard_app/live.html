@@ -9,10 +9,10 @@ Live View | Pi Security
 
 {% block content %}
 
-<h2>Live Camera</h2>
+<div class="page-heading"><div><p class="eyebrow">Camera 01</p><h2>Live view</h2><p>A window onto home.</p></div><a href="{% url 'dashboard_app:recordings' %}">Browse recordings →</a></div>
 
 
-<section class="card">
+<section class="card video-card">
 
     <video
         id="live-video"
@@ -22,7 +22,7 @@ Live View | Pi Security
         playsinline
     ></video>
 
-    <p id="stream-status">
+    <p id="stream-status" role="status" aria-live="polite">
         Connecting...
     </p>
 

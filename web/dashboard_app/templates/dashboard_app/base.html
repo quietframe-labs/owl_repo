@@ -1,100 +1,30 @@
 {% load static %}
-
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        {% block title %}
-        Pi Security
-        {% endblock %}
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="{% static 'dashboard_app/css/app.css' %}"
-    >
-
-    {% block head %}
-    {% endblock %}
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Owl | Pi Security{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'dashboard_app/css/app.css' %}?v=20260909">
+{% block head %}{% endblock %}
 </head>
-
 <body>
-
+<a class="skip-link" href="#main-content">Skip to content</a>
 <header class="site-header">
-
-    <h1>Pi Security</h1>
-
-    {% if user.is_authenticated %}
-
-    <nav>
-
-        <a href="{% url 'dashboard_app:dashboard' %}">
-            Dashboard
-        </a>
-
-        <a href="{% url 'dashboard_app:live' %}">
-            Live View
-        </a>
-
-        <a href="{% url 'dashboard_app:recordings' %}">
-            Recordings
-        </a>
-
-        {% if user.is_staff %}
-
-        <a href="/admin/">
-            Admin
-        </a>
-        {% endif %}
-        
-    </nav>
-
-    <form
-        method="post"
-        action="{% url 'logout' %}"
-    >
-
-        {% csrf_token %}
-
-        <button type="submit">
-            Log Out
-        </button>
-
-    </form>
-
-    {% endif %}
-    {% if not user.is_authenticated %}
-    <nav>
-        <a href="{% url 'login' %}">
-            Log In
-        </a>
-    </nav>
-    {% endif %}
+<a class="brand" href="{% url 'dashboard_app:dashboard' %}" aria-label="Owl home"><span class="brand-mark" aria-hidden="true">◉</span> OWL</a>
+{% if user.is_authenticated %}
+<nav aria-label="Main navigation">
+<a href="{% url 'dashboard_app:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Overview</a>
+<a href="{% url 'dashboard_app:live' %}" {% if request.resolver_match.url_name == 'live' %}aria-current="page"{% endif %}>Live view</a>
+<a href="{% url 'dashboard_app:recordings' %}" {% if request.resolver_match.url_name == 'recordings' %}aria-current="page"{% endif %}>Recordings</a>
+{% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
+</nav>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
+{% else %}
+<nav aria-label="Main navigation"><a href="{% url 'login' %}">Log in</a></nav>
+{% endif %}
 </header>
-
-
-<main class="page-container">
-
-    {% block content %}
-    {% endblock %}
-
-</main>
-
-
-{% block scripts %}
-{% endblock %}
-
+<main id="main-content" class="page-container">{% block content %}{% endblock %}</main>
+{% block scripts %}{% endblock %}
 </body>
-
 </html>

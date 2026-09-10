@@ -1,186 +1,57 @@
 {% extends "dashboard_app/base.html" %}
-
-
-{% block title %}
-Recordings | Pi Security
-{% endblock %}
-
-
+{% block title %}Recordings | Owl{% endblock %}
 {% block content %}
-
-<h2>Recordings</h2>
-
-
-<section class="card">
-
-    <table>
-
-        <thead>
-
-            <tr>
-                <th>Filename</th>
-                <th>Size</th>
-                <th>Action</th>
-            </tr>
-
-        </thead>
-
-        <tbody id="recordings-table">
-
-            <tr>
-
-                <td colspan="3">
-                    Loading...
-                </td>
-
-            </tr>
-
-        </tbody>
-
-    </table>
-
+<div class="page-heading"><div><p class="eyebrow">Camera 01 · Archive</p><h2>Recordings</h2><p>Find and open your saved footage.</p></div></div>
+<div class="table-tools"><input id="recording-search" type="search" aria-label="Search recordings" placeholder="Search by date or filename…" disabled><span id="recording-count" class="muted" role="status">Loading…</span></div>
+<section class="card table-card">
+<table><thead><tr><th scope="col">Recording</th><th scope="col">Size</th><th scope="col">Open</th></tr></thead><tbody id="recordings-table"><tr><td class="empty-state" colspan="3">Loading recordings…</td></tr></tbody></table>
 </section>
-
+<button id="show-more" type="button" hidden style="margin-top:1rem">Show more</button>
 {% endblock %}
-
-
 {% block scripts %}
-
 <script>
-
-function formatBytes(bytes) {
-
-    if (!bytes) {
-
-        return "0 MB";
-
+const table = document.getElementById('recordings-table');
+const search = document.getElementById('recording-search');
+const more = document.getElementById('show-more');
+let recordings = [], limit = 100;
+function renderRecordings() {
+    const matches = recordings.filter(item => item.filename.toLowerCase().includes(search.value.toLowerCase()));
+    table.replaceChildren();
+    document.getElementById('recording-count').textContent = matches.length + ' recording' + (matches.length === 1 ? '' : 's');
+    more.hidden = matches.length <= limit;
+    if (!matches.length) {
+        const cell = table.insertRow().insertCell();
+        cell.colSpan = 3; cell.className = 'empty-state';
+        cell.textContent = search.value ? 'No recordings match your search.' : 'No recordings yet.';
     }
-
-    const mb =
-        bytes / 1024 / 1024;
-
-    return `${mb.toFixed(1)} MB`;
-
+    for (const recording of matches.slice(0, limit)) {
+        const row = table.insertRow();
+        row.insertCell().textContent = recording.filename;
+        row.insertCell().textContent = (recording.size_bytes / 1024 / 1024).toFixed(1) + ' MB';
+        const link = document.createElement('a');
+        link.href = '/recordings/' + encodeURIComponent(recording.filename);
+        link.textContent = 'View →';
+        link.setAttribute('aria-label', 'View ' + recording.filename);
+        row.insertCell().append(link);
+    }
 }
-
-
+search.addEventListener('input', () => { limit = 100; renderRecordings(); });
+more.addEventListener('click', () => { limit += 100; renderRecordings(); });
 async function loadRecordings() {
-
-    const table =
-        document.getElementById(
-            "recordings-table"
-        );
-
-
     try {
-
-        const response =
-            await fetch(
-                "/api/recordings",
-                {
-                    cache: "no-store"
-                }
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                `HTTP ${response.status}`
-            );
-
-        }
-
-
-        const recordings =
-            await response.json();
-
-
-        table.innerHTML =
-            "";
-
-
-        if (!recordings.length) {
-
-            table.innerHTML = `
-                <tr>
-                    <td colspan="3">
-                        No recordings found.
-                    </td>
-                </tr>
-            `;
-
-            return;
-
-        }
-
-
-        for (
-            const recording
-            of recordings
-        ) {
-
-            const row =
-                document.createElement(
-                    "tr"
-                );
-
-
-            const url =
-                "/recordings/"
-                +
-                encodeURIComponent(
-                    recording.filename
-                );
-
-
-            row.innerHTML = `
-                <td>
-                    ${recording.filename}
-                </td>
-
-                <td>
-                    ${formatBytes(
-                        recording.size_bytes
-                    )}
-                </td>
-
-                <td>
-                    <a href="${url}">
-                        View
-                    </a>
-                </td>
-            `;
-
-
-            table.appendChild(
-                row
-            );
-
-        }
-
+        const response = await fetch('/api/recordings', {cache:'no-store'});
+        if (!response.ok) throw new Error('Recordings unavailable');
+        recordings = await response.json();
+        search.disabled = false;
+        renderRecordings();
+    } catch (error) {
+        table.replaceChildren();
+        const cell = table.insertRow().insertCell();
+        cell.colSpan = 3; cell.className = 'empty-state';
+        cell.textContent = 'Unable to load recordings. Refresh the page to try again.';
+        document.getElementById('recording-count').textContent = 'Unavailable';
     }
-
-    catch (error) {
-
-        console.error(error);
-
-
-        table.innerHTML = `
-            <tr>
-                <td colspan="3">
-                    Failed to load recordings.
-                </td>
-            </tr>
-        `;
-
-    }
-
 }
-
-
 loadRecordings();
-
 </script>
-
 {% endblock %}

@@ -1,149 +1,62 @@
 {% extends "dashboard_app/base.html" %}
-
-
-{% block title %}
-Dashboard | Pi Security
-{% endblock %}
-
-
+{% block title %}Overview | Owl{% endblock %}
 {% block content %}
-
-<h2>System Dashboard</h2>
-
-
-<div class="grid">
-
-    <section class="card">
-
-        <h3>Storage</h3>
-
-        <div id="storage">
-            Loading...
-        </div>
-
-    </section>
-
-
-    <section class="card">
-
-        <h3>Services</h3>
-
-        <div id="services">
-            Loading...
-        </div>
-
-    </section>
-
-
-    <section class="card">
-
-        <h3>Latest Recording</h3>
-
-        <div id="latest-recording">
-            Loading...
-        </div>
-
-    </section>
-
+<div class="page-heading">
+<div><p class="eyebrow">Your security system</p><h2>Around the clock.</h2><p>Storage, recording, and camera services at a glance.</p></div>
+<a class="button" href="{% url 'dashboard_app:live' %}">Open live view →</a>
 </div>
-
+<div class="grid">
+<section class="card"><h3>Storage</h3><div id="storage">Loading storage…</div></section>
+<section class="card"><h3>Service activity</h3><div id="services">Loading services…</div><p class="section-note">Process activity does not confirm video freshness.</p></section>
+<section class="card"><h3>Latest recording</h3><div id="latest-recording">Loading recording…</div></section>
+</div>
+<p id="updated" class="section-note" role="status">Checking system status…</p>
 {% endblock %}
-
-
 {% block scripts %}
-
 <script>
-
-async function loadStatus() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/status",
-                {
-                    cache: "no-store"
-                }
-            );
-
-        if (!response.ok) {
-
-            throw new Error(
-                `HTTP ${response.status}`
-            );
-
-        }
-
-        const data =
-            await response.json();
-
-
-        const storage =
-            data.storage || {};
-
-
-        document.getElementById(
-            "storage"
-        ).innerHTML = `
-            <p>
-                Mounted:
-                <strong>
-                    ${storage.mounted ? "Yes" : "No"}
-                </strong>
-            </p>
-
-            <p>
-                Used:
-                ${storage.percent_used ?? "Unknown"}%
-            </p>
-        `;
-
-
-        document.getElementById(
-            "services"
-        ).innerHTML = `
-            <pre>${JSON.stringify(
-                data.services || {},
-                null,
-                2
-            )}</pre>
-        `;
-
-
-        const latest =
-            data.latest_recording || {};
-
-
-        document.getElementById(
-            "latest-recording"
-        ).textContent =
-            latest.filename
-            || "No recording found";
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-        document.getElementById(
-            "storage"
-        ).textContent =
-            "Unable to load system status.";
-
-    }
-
+function element(tag, text, className) {
+    const node = document.createElement(tag);
+    node.textContent = text;
+    if (className) node.className = className;
+    return node;
 }
-
-
+async function loadStatus() {
+    try {
+        const response = await fetch('/api/status', {cache:'no-store'});
+        if (!response.ok) throw new Error('Status unavailable');
+        const data = await response.json();
+        const storage = document.getElementById('storage');
+        const percent = data.storage.percent_used;
+        storage.replaceChildren(element('div', percent == null ? 'Unknown' : percent + '%', 'metric'));
+        const progress = document.createElement('progress');
+        progress.max = 100; progress.value = Number(percent) || 0;
+        progress.setAttribute('aria-label', 'Storage used');
+        storage.append(progress, element('p', 'of available storage used', 'muted'),
+            element('span', data.storage.mounted ? 'Storage connected' : 'Storage not mounted', 'badge' + (data.storage.mounted ? '' : ' warning')));
+        const services = document.getElementById('services');
+        services.replaceChildren();
+        for (const [key, label] of Object.entries({recorder:'Recorder',live_stream:'Live stream',retention_timer:'Recording cleanup',storage_monitor_timer:'Storage monitor'})) {
+            const active = data.services?.[key];
+            const row = element('div', '', 'status-row');
+            row.append(element('span', label), element('span', active === true ? 'Active' : active === false ? 'Inactive' : 'Unknown', 'badge' + (active === true ? '' : ' warning')));
+            services.append(row);
+        }
+        const latest = document.getElementById('latest-recording');
+        latest.replaceChildren();
+        const recording = data.latest_recording;
+        if (recording) {
+            latest.append(element('p', new Date(recording.modified * 1000).toLocaleString()), element('p', recording.filename, 'filename'));
+            const link = element('a', 'Browse recordings →');
+            link.href = '{% url "dashboard_app:recordings" %}';
+            latest.append(link);
+        } else latest.append(element('p', 'No recordings yet.', 'muted'));
+        document.getElementById('updated').textContent = 'Updated ' + new Date().toLocaleTimeString() + ' · Refreshes every 10 seconds';
+    } catch (error) {
+        for (const id of ['storage','services','latest-recording']) document.getElementById(id).textContent = 'Status unavailable. Retrying shortly…';
+        document.getElementById('updated').textContent = 'Unable to reach the system.';
+    }
+}
 loadStatus();
-
-
-setInterval(
-    loadStatus,
-    10000
-);
-
+setInterval(loadStatus, 10000);
 </script>
-
 {% endblock %}

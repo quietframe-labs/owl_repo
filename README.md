@@ -1,5 +1,18 @@
 # Owl
 
+To install UI changes after they are pushed to GitHub, run on Owl:
+
+```sh
+cd /srv/pi-security/app/owl_repo &&
+git pull --ff-only &&
+sudo sh deploy/update-ui.sh
+```
+
+This publishes the updated stylesheet to the existing collected static directory
+and restarts the web service. Refresh the browser with Ctrl+F5. Changes that add
+other static assets require Django's `collectstatic` using the service's Python
+environment; this UI helper only publishes the app stylesheet.
+
 Changes flow from the PC checkout to GitHub, then to Owl's checkout.
 Owl's checkout is `/srv/pi-security/app/owl_repo`, and its web service runs
 from that checkout's `web` directory. The installer reads the service's
