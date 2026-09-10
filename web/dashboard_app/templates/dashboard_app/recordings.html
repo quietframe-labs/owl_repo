@@ -1,42 +1,83 @@
 {% extends "dashboard_app/base.html" %}
 {% block title %}Recordings | Owl{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">Camera 01 · Archive</p><h2>Recordings</h2><p>Find and open your saved footage.</p></div></div>
-<div class="table-tools"><input id="recording-search" type="search" aria-label="Search recordings" placeholder="Search by date or filename…" disabled><span id="recording-count" class="muted" role="status">Loading…</span></div>
-<section class="card table-card">
-<table><thead><tr><th scope="col">Recording</th><th scope="col">Size</th><th scope="col">Open</th></tr></thead><tbody id="recordings-table"><tr><td class="empty-state" colspan="3">Loading recordings…</td></tr></tbody></table>
+<div class="page-heading"><div><p class="eyebrow">Camera 01 · Archive</p><h2>Recordings</h2><p>Watch saved footage here, or download a copy.</p></div></div>
+<section id="recording-viewer" class="card video-card" hidden aria-labelledby="viewer-title">
+<div class="viewer-heading"><div><p class="eyebrow">Now viewing</p><h3 id="viewer-title" tabindex="-1"></h3></div><button id="close-viewer" class="secondary" type="button">Close player</button></div>
+<video id="recording-video" controls playsinline preload="metadata"></video>
+<div class="viewer-footer"><p id="playback-status" role="status">Select Play to watch.</p><a id="viewer-download" class="download-link">Download recording ↓</a></div>
 </section>
+<div class="table-tools"><input id="recording-search" type="search" aria-label="Search recordings" placeholder="Search by date or filename…" disabled><span id="recording-count" class="muted" role="status">Loading…</span></div>
+<div id="recording-tiles" class="recording-grid"><p class="empty-state">Loading recordings…</p></div>
 <button id="show-more" type="button" hidden style="margin-top:1rem">Show more</button>
 {% endblock %}
 {% block scripts %}
 <script>
-const table = document.getElementById('recordings-table');
+const tiles = document.getElementById('recording-tiles');
 const search = document.getElementById('recording-search');
 const more = document.getElementById('show-more');
-let recordings = [], limit = 100;
+const viewer = document.getElementById('recording-viewer');
+const video = document.getElementById('recording-video');
+const playbackStatus = document.getElementById('playback-status');
+let recordings = [], limit = 48, selectedFilename = null;
+function node(tag, text, className) {
+    const item = document.createElement(tag);
+    item.textContent = text;
+    if (className) item.className = className;
+    return item;
+}
+function mediaUrl(filename) { return '/recordings/' + encodeURIComponent(filename); }
+function openRecording(recording) {
+    selectedFilename = recording.filename;
+    viewer.hidden = false;
+    document.getElementById('viewer-title').textContent = recording.filename;
+    document.getElementById('viewer-download').href = mediaUrl(recording.filename) + '?download=true';
+    video.pause();
+    video.src = mediaUrl(recording.filename);
+    video.load();
+    playbackStatus.textContent = 'Loading recording…';
+    document.getElementById('viewer-title').focus({preventScroll:true});
+    viewer.scrollIntoView({behavior:'smooth', block:'start'});
+    video.play().catch(() => { if (!video.error) playbackStatus.textContent = 'Select Play to watch.'; });
+}
+document.getElementById('close-viewer').addEventListener('click', () => {
+    video.pause(); video.removeAttribute('src'); video.load(); viewer.hidden = true;
+    const trigger = Array.from(tiles.querySelectorAll('button')).find(button => button.dataset.filename === selectedFilename);
+    (trigger || search).focus();
+});
+video.addEventListener('playing', () => { playbackStatus.textContent = 'Playing recording'; });
+video.addEventListener('pause', () => { if (!video.ended && !video.error) playbackStatus.textContent = 'Paused'; });
+video.addEventListener('waiting', () => { playbackStatus.textContent = 'Buffering…'; });
+video.addEventListener('ended', () => { playbackStatus.textContent = 'End of recording'; });
+video.addEventListener('error', () => { playbackStatus.textContent = 'This recording cannot be played yet. It may still be recording, or the format may not be supported. Try another clip or download it.'; });
 function renderRecordings() {
     const matches = recordings.filter(item => item.filename.toLowerCase().includes(search.value.toLowerCase()));
-    table.replaceChildren();
+    tiles.replaceChildren();
     document.getElementById('recording-count').textContent = matches.length + ' recording' + (matches.length === 1 ? '' : 's');
     more.hidden = matches.length <= limit;
-    if (!matches.length) {
-        const cell = table.insertRow().insertCell();
-        cell.colSpan = 3; cell.className = 'empty-state';
-        cell.textContent = search.value ? 'No recordings match your search.' : 'No recordings yet.';
-    }
+    if (!matches.length) tiles.append(node('p', search.value ? 'No recordings match your search.' : 'No recordings yet.', 'empty-state'));
     for (const recording of matches.slice(0, limit)) {
-        const row = table.insertRow();
-        row.insertCell().textContent = recording.filename;
-        row.insertCell().textContent = (recording.size_bytes / 1024 / 1024).toFixed(1) + ' MB';
-        const link = document.createElement('a');
-        link.href = '/recordings/' + encodeURIComponent(recording.filename);
-        link.textContent = 'View →';
-        link.setAttribute('aria-label', 'View ' + recording.filename);
-        row.insertCell().append(link);
+        const tile = node('article', '', 'card recording-tile');
+        const view = node('button', '', 'recording-open');
+        view.type = 'button'; view.dataset.filename = recording.filename;
+        view.setAttribute('aria-label', 'View ' + recording.filename);
+        view.setAttribute('aria-controls', 'recording-viewer');
+        const icon = node('span', '▶', 'recording-icon');
+        icon.setAttribute('aria-hidden', 'true');
+        view.append(icon, node('span', 'View recording', 'recording-action'));
+        view.addEventListener('click', () => openRecording(recording));
+        const title = node('h3', recording.filename, 'recording-name');
+        const footer = node('div', '', 'tile-footer');
+        const download = node('a', 'Download ↓', 'download-link');
+        download.href = mediaUrl(recording.filename) + '?download=true';
+        download.setAttribute('aria-label', 'Download ' + recording.filename);
+        footer.append(node('span', (recording.size_bytes / 1024 / 1024).toFixed(1) + ' MB', 'muted'), download);
+        tile.append(view, title, footer);
+        tiles.append(tile);
     }
 }
-search.addEventListener('input', () => { limit = 100; renderRecordings(); });
-more.addEventListener('click', () => { limit += 100; renderRecordings(); });
+search.addEventListener('input', () => { limit = 48; renderRecordings(); });
+more.addEventListener('click', () => { limit += 48; renderRecordings(); });
 async function loadRecordings() {
     try {
         const response = await fetch('/api/recordings', {cache:'no-store'});
@@ -45,10 +86,7 @@ async function loadRecordings() {
         search.disabled = false;
         renderRecordings();
     } catch (error) {
-        table.replaceChildren();
-        const cell = table.insertRow().insertCell();
-        cell.colSpan = 3; cell.className = 'empty-state';
-        cell.textContent = 'Unable to load recordings. Refresh the page to try again.';
+        tiles.replaceChildren(node('p', 'Unable to load recordings. Refresh the page to try again.', 'empty-state'));
         document.getElementById('recording-count').textContent = 'Unavailable';
     }
 }

@@ -1,5 +1,8 @@
 # Owl
 
+See [the update and recovery guide](docs/owl-maintenance-guide.md) for the full
+PC → GitHub → Owl workflow, verification commands, and troubleshooting.
+
 To install UI changes after they are pushed to GitHub, run on Owl:
 
 ```sh

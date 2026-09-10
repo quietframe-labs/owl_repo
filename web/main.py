@@ -230,7 +230,7 @@ def list_recordings():
 # ---------------------------------------------------------
 
 @app.get("/recordings/{filename}")
-def get_recording(filename: str):
+def get_recording(filename: str, download: bool = False):
 
     recording = (
         RECORDINGS_PATH / filename
@@ -260,7 +260,8 @@ def get_recording(filename: str):
     return FileResponse(
         recording,
         media_type="video/mp4",
-        filename=recording.name
+        filename=recording.name,
+        content_disposition_type="attachment" if download else "inline"
     )
 
 
